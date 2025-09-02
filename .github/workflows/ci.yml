@@ -100,9 +100,10 @@ jobs:
 
       - name: Pull Docker images
         run: |
-          docker pull ghcr.io/${{ github.repository }}/account-service:${{ github.sha }}
-          docker pull ghcr.io/${{ github.repository }}/transaction-service:${{ github.sha }}
-          docker pull ghcr.io/${{ github.repository }}/payment-service:${{ github.sha }}
+          REPO=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          docker pull ghcr.io/$REPO/account-service:${{ github.sha }}
+          docker pull ghcr.io/$REPO/transaction-service:${{ github.sha }}
+          docker pull ghcr.io/$REPO/payment-service:${{ github.sha }}
 
       - name: Install Syft CLI
         run: |
@@ -111,15 +112,18 @@ jobs:
 
       - name: Generate SBOM for account-service
         run: |
-          syft ghcr.io/${{ github.repository }}/account-service:${{ github.sha }} -o json > sbom-account.json
+          REPO=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          syft ghcr.io/$REPO/account-service:${{ github.sha }} -o json > sbom-account.json
 
       - name: Generate SBOM for transaction-service
         run: |
-          syft ghcr.io/${{ github.repository }}/transaction-service:${{ github.sha }} -o json > sbom-transaction.json
+          REPO=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          syft ghcr.io/$REPO/transaction-service:${{ github.sha }} -o json > sbom-transaction.json
 
       - name: Generate SBOM for payment-service
         run: |
-          syft ghcr.io/${{ github.repository }}/payment-service:${{ github.sha }} -o json > sbom-payment.json
+          REPO=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          syft ghcr.io/$REPO/payment-service:${{ github.sha }} -o json > sbom-payment.json
 
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
