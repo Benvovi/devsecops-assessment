@@ -58,7 +58,7 @@ jobs:
           format: sarif
           output: trivy.sarif
 
- migrate_db:
+  migrate_db:
     needs: build_scan_push
     runs-on: ubuntu-latest
     services:
@@ -87,7 +87,7 @@ jobs:
           locations: filesystem:implementation/ci-cd/migrations
           command: migrate
 
-    - name: Generate SBOM for account-service
+      - name: Generate SBOM for account-service
         uses: anchore/syft-action@v0.20.0
         with:
           image: ghcr.io/${{ github.repository }}/account-service:${{ github.sha }}
@@ -112,5 +112,5 @@ jobs:
           path: |
             sbom-account.json
             sbom-transaction.json
-            sbom-payment.json 
-   
+            sbom-payment.json
+
