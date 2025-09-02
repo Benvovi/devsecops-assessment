@@ -58,3 +58,59 @@ jobs:
           format: sarif
           output: trivy.sarif
 
+migrate_db:
+    needs: build_scan_push
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: core
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Flyway migrations
+        uses: flyway/flyway-action@v3
+        with:
+          url: jdbc:postgresql://localhost:5432/core
+          user: postgres
+          password: postgres
+          locations: filesystem:implementation/ci-cd/migrations
+          command: migrate
+
+      - name: Generate SBOM for account-service
+        uses: anchore/syft-action@v0.20.0
+        with:
+          image: ghcr.io/${{ github.repository }}/account-service:${{ github.sha }}
+          output: sbom-account.json
+
+      - name: Generate SBOM for transaction-service
+        uses: anchore/syft-action@v0.20.0
+        with:
+          image: ghcr.io/${{ github.repository }}/transaction-service:${{ github.sha }}
+          output: sbom-transaction.json
+
+      - name: Generate SBOM for payment-service
+        uses: anchore/syft-action@v0.20.0
+        with:
+          image: ghcr.io/${{ github.repository }}/payment-service:${{ github.sha }}
+          output: sbom-payment.json
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sboms
+          path: |
+            sbom-account.json
+            sbom-transaction.json
+            sbom-payment.json
+
