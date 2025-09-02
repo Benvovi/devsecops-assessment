@@ -81,7 +81,7 @@ jobs:
       - name: Install Flyway CLI
         run: |
           curl -L https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/10.16.0/flyway-commandline-10.16.0-linux-x64.tar.gz | tar xz
-        sudo ln -s $PWD/flyway-10.16.0/flyway /usr/local/bin/flyway
+          sudo ln -s $PWD/flyway-10.16.0/flyway /usr/local/bin/flyway
 
       - name: Run Flyway migrations
         run: |
