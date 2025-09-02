@@ -1,0 +1,39 @@
+name: deploy-kind
+
+on:
+  workflow_dispatch:
+  push: { tags: ['release-*'] }   # create a tag to trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1
+        with: { cluster_name: demo }
+      - name: Namespace
+        run: kubectl create ns demo --dry-run=client -o yaml | kubectl apply -f -
+      - name: Deploy in order (account -> transaction -> payment)
+        run: |
+          set -e
+          for svc in account-service transaction-service payment-service; do
+            helm upgrade --install $svc implementation/ci-cd/helm/$svc -n demo \
+              --set image.repository=ghcr.io/${{ github.repository }}/$svc \
+              --set image.tag=${{ github.sha }} --wait --timeout 180s
+          done
+      - name: Smoke check
+        run: kubectl -n demo get pods && kubectl -n demo get svc
+
+  rollback_on_failure:
+    if: failure()
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: helm/kind-action@v1
+        with: { cluster_name: demo }
+      - name: Rollback all
+        run: |
+          for r in payment-service transaction-service account-service; do
+            helm -n demo rollback $r 1 || true
+          done
+
