@@ -94,6 +94,7 @@ jobs:
       - name: Install Syft CLI
         run: |
           curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh
+          echo "$PWD/bin" >> $GITHUB_PATH
 
       - name: Generate SBOM for account-service
         run: syft ghcr.io/${{ github.repository }}/account-service:${{ github.sha }} -o json > sbom-account.json
