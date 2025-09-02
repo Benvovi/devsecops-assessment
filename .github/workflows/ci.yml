@@ -92,22 +92,19 @@ jobs:
                migrate
 
       - name: Generate SBOM for account-service
-        uses: anchore/syft-action@v0.20.0
-        with:
-          image: ghcr.io/${{ github.repository }}/account-service:${{ github.sha }}
-          output: sbom-account.json
+        run: |
+          docker run --rm -v $GITHUB_WORKSPACE:/workspace anchore/syft:latest \
+    ghcr.io/${{ github.repository }}/account-service:${{ github.sha }} -o json > sbom-account.json
 
       - name: Generate SBOM for transaction-service
-        uses: anchore/syft-action@v0.20.0
-        with:
-          image: ghcr.io/${{ github.repository }}/account-service:${{ github.sha }}
-          output: sbom-transaction.json
+        run: |
+          docker run --rm -v $GITHUB_WORKSPACE:/workspace anchore/syft:latest \
+    ghcr.io/${{ github.repository }}/transaction-service:${{ github.sha }} -o json > sbom-transaction.json
 
       - name: Generate SBOM for payment-service
-        uses: anchore/syft-action@v0.20.0
-        with:
-          image: ghcr.io/${{ github.repository }}/account-service:${{ github.sha }}
-          output: sbom-payment.json
+        run: |
+          docker run --rm -v $GITHUB_WORKSPACE:/workspace anchore/syft:latest \
+    ghcr.io/${{ github.repository }}/payment-service:${{ github.sha }} -o json > sbom-payment.json
 
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
