@@ -80,10 +80,13 @@ jobs:
 
       - name: Run Flyway migrations
         run: |
-          docker run --rm -v $GITHUB_WORKSPACE/implementation/ci-cd/migrations:/flyway/sql flyway/flyway \
-          -url=jdbc:postgresql://postgres:5432/core \
+          docker run --rm \
+          -v $GITHUB_WORKSPACE/implementation/ci-cd/migrations:/flyway/sql \
+          flyway/flyway \
+          -url=jdbc:postgresql://host.docker.internal:5432/core \
           -user=postgres \
-          -password=postgres migrate
+          -password=postgres \
+          migrate
 
       - name: Generate SBOM for account-service
         run: |
