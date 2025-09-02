@@ -77,16 +77,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+     
+      - name: Install Flyway CLI
+        run: |
+          curl -L https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/10.16.0/flyway-commandline-10.16.0-linux-x64.tar.gz | tar xz
+        sudo ln -s $PWD/flyway-10.16.0/flyway /usr/local/bin/flyway
 
       - name: Run Flyway migrations
         run: |
-          docker run --rm \
-          -v $GITHUB_WORKSPACE/implementation/ci-cd/migrations:/flyway/sql \
-          flyway/flyway \
-          -url=jdbc:postgresql://host.docker.internal:5432/core \
-          -user=postgres \
-          -password=postgres \
-          migrate
+          flyway -url=jdbc:postgresql://localhost:5432/core \
+               -user=postgres \
+               -password=postgres \
+               -locations=filesystem:implementation/ci-cd/migrations \
+               migrate
 
       - name: Generate SBOM for account-service
         run: |
