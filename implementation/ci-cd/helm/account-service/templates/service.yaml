@@ -6,7 +6,6 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
+      targetPort: 8080
   selector:
     app: {{ include "account-service.name" . }}
-
