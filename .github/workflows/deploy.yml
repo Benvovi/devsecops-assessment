@@ -1,34 +1,64 @@
 name: deploy-kind
-
 on:
   workflow_dispatch:
-  push: 
-    tags: ['release-*']   # create a tag to trigger
+  push:
+    tags: ['release-*']
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
       - uses: helm/kind-action@v1
-        with: 
+        with:
           cluster_name: demo
 
       - name: Namespace
         run: kubectl create ns demo --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Deploy in order (account -> transaction -> payment)
+      - name: Debug directory structure
+        run: |
+          echo "Current directory: $PWD"
+          echo "Listing Helm charts:"
+          ls -R implementation/ci-cd/helm || echo "Helm dir not found!"
+          for svc in account-service transaction-service payment-service; do
+            if [ -d "implementation/ci-cd/helm/$svc" ]; then
+              echo "Found $svc chart:"
+              ls -R implementation/ci-cd/helm/$svc
+            else
+              echo "Error: $svc chart directory missing!"
+              exit 1
+            fi
+          done
+
+      - name: Validate Helm charts
+        run: |
+          cd implementation/ci-cd/helm
+          for svc in account-service transaction-service payment-service; do
+            echo "Linting $svc"
+            helm lint $svc || echo "Lint warnings for $svc - proceeding"
+          done
+
+      - name: Deploy in order
         run: |
           set -e
           for svc in account-service transaction-service payment-service; do
-            helm upgrade --install $svc $GITHUB_WORKSPACE/implementation/ci-cd/helm/$svc -n demo \
-              --set image.repository=ghcr.io/${{ github.repository }}/$svc \
-              --set image.tag=${{ github.sha }} --wait --timeout 180s
+            echo "Deploying $svc"
+            helm upgrade --install $svc implementation/ci-cd/helm/$svc -n demo               --set image.repository=ghcr.io/Benvovi/devsecops-assessment/$svc               --set image.tag=${{ github.sha }} --wait --timeout 600s --debug
           done
 
       - name: Smoke check
-        run: kubectl -n demo get pods && kubectl -n demo get svc
+        run: |
+          kubectl -n demo get pods
+          kubectl -n demo get svc
+          for svc in account-service transaction-service payment-service; do
+            echo "Logs for $svc pods:"
+            kubectl -n demo logs deployment/$svc --tail=10 || true
+          done
 
   rollback_on_failure:
     if: failure()
@@ -36,12 +66,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: helm/kind-action@v1
-        with: 
+        with:
           cluster_name: demo
-
       - name: Rollback all
         run: |
           for r in payment-service transaction-service account-service; do
             helm -n demo rollback $r 1 || true
           done
-
